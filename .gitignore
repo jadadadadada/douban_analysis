@@ -1,0 +1,35 @@
+# 本机敏感配置
+config.py
+.env
+.env.*
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# Python 缓存与构建产物
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# 本地数据与生成资源
+static/posters/
+*.log
+*.sqlite3
+*.db
+
+# 编辑器与本地工具配置
+.vscode/
+.idea/
+.claude/
+AGENTS.md
+CLAUDE.md
+
+# 系统文件
+.DS_Store
+Thumbs.db

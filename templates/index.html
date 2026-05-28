@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豆瓣电影数据分析系统</title>
+    <!-- ECharts 本地文件 -->
+    <script src="/static/js/lib/echarts.min.js"></script>
+    <!-- ECharts 词云扩展 -->
+    <script src="/static/js/lib/echarts-wordcloud.min.js"></script>
+    <!-- 样式 -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 顶部工作台标题 -->
+        <header class="dashboard-header">
+            <div class="header-main">
+                <div class="header-title-group">
+                    <span class="header-kicker">Douban Movie Analytics</span>
+                    <h1>豆瓣电影数据分析系统</h1>
+                    <p class="subtitle">基于电影评分、类型、年代与产地的多维度可视化分析</p>
+                </div>
+                <div class="user-bar" id="user-bar">
+                    <!-- 未登录 -->
+                    <div id="guest-area">
+                        <button class="user-btn" onclick="showModal('login-modal')">登录</button>
+                        <button class="user-btn user-btn-primary" onclick="showModal('register-modal')">注册</button>
+                    </div>
+                    <!-- 已登录（默认隐藏） -->
+                    <div id="user-area" style="display:none;">
+                        <span class="user-greeting">欢迎，<strong id="display-username"></strong></span>
+                        <button class="user-btn" onclick="logout()">退出</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 核心指标卡 -->
+        <div class="indicator-cards">
+            <div class="indicator-card indicator-blue">
+                <div class="card-icon">影</div>
+                <div class="card-info">
+                    <span class="card-value" id="total-movies">--</span>
+                    <span class="card-label">总电影数</span>
+                </div>
+            </div>
+            <div class="indicator-card indicator-amber">
+                <div class="card-icon">分</div>
+                <div class="card-info">
+                    <span class="card-value" id="avg-rating">--</span>
+                    <span class="card-label">平均评分</span>
+                </div>
+            </div>
+            <div class="indicator-card indicator-teal">
+                <div class="card-icon">导</div>
+                <div class="card-info">
+                    <span class="card-value" id="total-directors">--</span>
+                    <span class="card-label">导演数</span>
+                </div>
+            </div>
+            <div class="indicator-card indicator-red">
+                <div class="card-icon">演</div>
+                <div class="card-info">
+                    <span class="card-value" id="total-actors">--</span>
+                    <span class="card-label">演员数</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选区 -->
+        <div class="filter-bar">
+            <div class="filter-title">筛选条件</div>
+            <div class="filter-item">
+                <label for="filter-genre">类型：</label>
+                <select id="filter-genre">
+                    <option value="">全部类型</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-year">年份：</label>
+                <select id="filter-year">
+                    <option value="">全部年份</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-country">国家：</label>
+                <select id="filter-country">
+                    <option value="">全部国家</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-rating">最低评分：</label>
+                <input type="range" id="filter-rating" min="0" max="10" step="0.5" value="0">
+                <span id="rating-display">0</span>
+            </div>
+            <button class="filter-btn" id="filter-apply">应用筛选</button>
+            <button class="filter-btn filter-btn-reset" id="filter-reset">重置</button>
+        </div>
+
+        <!-- 用户互动区 -->
+        <div class="user-panel" id="user-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="browse" onclick="switchTab('browse')">电影浏览</button>
+                <button class="panel-tab" data-tab="favorites" onclick="switchTab('favorites')">我的收藏</button>
+                <button class="panel-tab" data-tab="my-ratings" onclick="switchTab('my-ratings')">我的评分</button>
+            </div>
+
+            <!-- 电影浏览 -->
+            <div class="tab-content active" id="tab-browse">
+                <div class="movie-grid" id="movie-list">
+                    <!-- 动态填充 -->
+                </div>
+                <div class="pagination" id="browse-pagination"></div>
+            </div>
+
+            <!-- 我的收藏 -->
+            <div class="tab-content" id="tab-favorites">
+                <div class="login-hint" id="fav-login-hint">请先登录查看收藏</div>
+                <div class="movie-grid" id="fav-list" style="display:none;"></div>
+                <div class="pagination" id="fav-pagination"></div>
+            </div>
+
+            <!-- 我的评分 -->
+            <div class="tab-content" id="tab-my-ratings">
+                <div class="login-hint" id="rate-login-hint">请先登录查看评分</div>
+                <div class="movie-grid" id="rating-list" style="display:none;"></div>
+                <div class="pagination" id="rating-pagination"></div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-grid">
+            <!-- 饼图：类型分布 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">电影类型分布</h3>
+                <div class="chart-body" id="chart-pie"></div>
+            </div>
+
+            <!-- 柱状图：评分分布 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">评分区间分布</h3>
+                <div class="chart-body" id="chart-bar"></div>
+            </div>
+
+            <!-- 折线图：年代趋势 -->
+            <div class="chart-container chart-full">
+                <h3 class="chart-title">近50年电影数量与平均评分趋势</h3>
+                <div class="chart-body" id="chart-line"></div>
+            </div>
+
+            <!-- 地图：国家分布 -->
+            <div class="chart-container chart-full">
+                <h3 class="chart-title">电影产地分布 Top20</h3>
+                <div class="chart-body" id="chart-map"></div>
+            </div>
+
+            <!-- 词云 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">电影简介高频关键词</h3>
+                <div class="chart-body" id="chart-wordcloud"></div>
+            </div>
+
+            <!-- 热力图：年份×类型 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">年份×类型电影数量热力图</h3>
+                <div class="chart-body" id="chart-heatmap"></div>
+            </div>
+
+            <!-- 关系图：导演-演员 -->
+            <div class="chart-container chart-full">
+                <h3 class="chart-title">高产导演与合作演员网络</h3>
+                <div class="chart-body" id="chart-graph"></div>
+            </div>
+
+            <!-- 散点图：时长 vs 评分 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">电影时长与评分相关性</h3>
+                <div class="chart-body" id="chart-scatter"></div>
+            </div>
+
+            <!-- 排行榜 -->
+            <div class="chart-container chart-large">
+                <h3 class="chart-title">评分最高电影 Top20</h3>
+                <div class="chart-body" id="chart-rank"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div class="modal-overlay" id="login-modal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>用户登录</h3>
+                <button class="modal-close" onclick="hideModal('login-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="login-username" placeholder="请输入用户名" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码">
+                </div>
+                <div class="form-error" id="login-error"></div>
+                <button class="modal-submit" onclick="doLogin()">登录</button>
+                <p class="modal-switch">没有账号？<a href="#" onclick="switchToRegister()">立即注册</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div class="modal-overlay" id="register-modal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>用户注册</h3>
+                <button class="modal-close" onclick="hideModal('register-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="reg-username" placeholder="2-50 个字符" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="reg-password" placeholder="至少 3 位">
+                </div>
+                <div class="form-group">
+                    <label>邮箱（可选）</label>
+                    <input type="email" id="reg-email" placeholder="选填">
+                </div>
+                <div class="form-error" id="register-error"></div>
+                <button class="modal-submit" onclick="doRegister()">注册</button>
+                <p class="modal-switch">已有账号？<a href="#" onclick="switchToLogin()">去登录</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/user-panel.js"></script>
+    <script src="/static/js/charts.js"></script>
+</body>
+</html>
