@@ -1,6 +1,6 @@
 # 豆瓣电影数据分析系统
 
-基于豆瓣电影数据的可视化分析系统，后端使用 Flask + MySQL，前端使用 ECharts 展示统计分析结果，并配套提供爬虫、数据补充和论文辅助脚本。
+(大学作业)基于豆瓣电影数据的可视化分析系统，后端使用 Flask + MySQL，前端使用 ECharts 展示统计分析结果，并配套提供爬虫、数据补充和论文辅助脚本。
 
 当前仓库仅托管项目实现代码，不包含本机配置、虚拟环境、论文终稿和图片素材。
 
@@ -22,8 +22,6 @@ douban_analysis/
 ├── config.example.py
 ├── config.py              # 本地创建，不提交仓库
 ├── requirements.txt
-├── AGENTS.md
-├── CLAUDE.md
 ├── api/
 ├── analysis/
 ├── db/
